@@ -13,11 +13,11 @@ const connectionTimeout time.Duration = 5 * time.Second
 
 type tykConnection struct {
 	client  *http.Client
-	baseURL string
-	secret  string
+	baseURL *string
+	secret  *string
 }
 
-func tykClient(u string, s string) *tykConnection {
+func tykClient(u *string, s *string) *tykConnection {
 	return &tykConnection{
 		client: &http.Client{
 			Timeout: connectionTimeout,
@@ -27,13 +27,13 @@ func tykClient(u string, s string) *tykConnection {
 	}
 }
 
-func (tc *tykConnection) fetchAPIs() (model.APIs, error) {
-	req, err := http.NewRequest("GET", tc.baseURL+"/api/apis", nil)
+func (tc *tykConnection) fetchAPIs() string {
+	req, err := http.NewRequest("GET", *tc.baseURL+"/api/apis", nil)
 	if err != nil {
 		log.Fatal("Error reading request: ", err)
 	}
-	req.Header.Set("Authorization", tc.secret)
-	resp, err := tc.client.do(req)
+	req.Header.Set("Authorization", *tc.secret)
+	resp, err := tc.client.Do(req)
 	if err != nil {
 		log.Fatal("Error reading response: ", err)
 	}
@@ -43,6 +43,7 @@ func (tc *tykConnection) fetchAPIs() (model.APIs, error) {
 		log.Fatal("Error reading body: ", err)
 	}
 	fmt.Printf("%s\n", body)
+	return string(body)
 }
 
 func main() {
@@ -65,5 +66,10 @@ func main() {
 	}
 	if (*apis && *users) || (!*apis && !*users) {
 		log.Fatal("Specify exactly one of apis(-a) or users(-u)")
+	}
+	con := tykClient(dashboard, secret)
+	results := con.fetchAPIs()
+	if results == "" {
+		log.Fatal("nil")
 	}
 }
