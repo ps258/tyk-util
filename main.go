@@ -28,6 +28,8 @@ func tykClient(u *string, s *string) *tykConnection {
 }
 
 func (tc *tykConnection) fetchAPIs() string {
+	var apis OrgAPIs
+	var me Me
 	req, err := http.NewRequest("GET", *tc.baseURL+"/api/apis", nil)
 	if err != nil {
 		log.Fatal("Error reading request: ", err)
