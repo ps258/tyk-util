@@ -9,9 +9,27 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/TykTechnologies/tyk/apidef"
 )
 
 const connectionTimeout time.Duration = 5 * time.Second
+
+// OrgAPIs contains the APIs for the while organisation
+type OrgAPIs struct {
+	Apis []struct {
+		CreatedAt time.Time `json:"created_at"`
+		APIModel  struct {
+		} `json:"api_model"`
+		APIDefinition   apidef.APIDefinition `json:"api_definition"`
+		HookReferences  []string             `json:"hook_references"`
+		IsSite          bool                 `json:"is_site"`
+		SortBy          int                  `json:"sort_by"`
+		UserGroupOwners []string             `json:"user_group_owners"`
+		UserOwners      []string             `json:"user_owners"`
+	} `json:"apis"`
+	Pages int `json:"pages"`
+}
 
 type tykConnection struct {
 	client  *http.Client
@@ -29,7 +47,7 @@ func tykClient(u *string, s *string) *tykConnection {
 	}
 }
 
-func (tc *tykConnection) fetchGatewayAPIs() ([]APIDefinition, error) {
+func (tc *tykConnection) fetchGatewayAPIs() ([]apidef.APIDefinition, error) {
 	req, err := http.NewRequest("GET", *tc.baseURL+"/tyk/apis", nil)
 	if err != nil {
 		log.Fatal("Error reading request: ", err)
@@ -45,7 +63,7 @@ func (tc *tykConnection) fetchGatewayAPIs() ([]APIDefinition, error) {
 		log.Fatal("Error reading body: ", err)
 	}
 	//fmt.Printf("%s\n", body)
-	var apis []APIDefinition
+	var apis []apidef.APIDefinition
 	err = json.Unmarshal(body, &apis)
 	return apis, err
 }
