@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,28 @@ func tykClient(u *string, s *string) *tykConnection {
 	}
 }
 
-func (tc *tykConnection) fetchAPIs() (*OrgAPIs, error) {
+func (tc *tykConnection) fetchGatewayAPIs() ([]APIDefinition, error) {
+	req, err := http.NewRequest("GET", *tc.baseURL+"/tyk/apis", nil)
+	if err != nil {
+		log.Fatal("Error reading request: ", err)
+	}
+	req.Header.Set("x-tyk-authorization", *tc.secret)
+	resp, err := tc.client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response: ", err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body: ", err)
+	}
+	//fmt.Printf("%s\n", body)
+	var apis []APIDefinition
+	err = json.Unmarshal(body, &apis)
+	return apis, err
+}
+
+func (tc *tykConnection) fetchDashboardAPIs() (*OrgAPIs, error) {
 	var apis OrgAPIs
 	req, err := http.NewRequest("GET", *tc.baseURL+"/api/apis", nil)
 	if err != nil {
@@ -70,14 +92,24 @@ func main() {
 	if (*apis && *users) || (!*apis && !*users) {
 		log.Fatal("Specify exactly one of apis(-a) or users(-u)")
 	}
-	con := tykClient(dashboard, secret)
-	results, err := con.fetchAPIs()
-	if err != nil {
-		log.Fatal("Cannot unmarshal: ", err)
-	}
-	// fmt.Println(results.Apis[0].CreatedAt)
-	for _, api := range results.Apis {
-		fmt.Println(api.CreatedAt)
-		fmt.Println(api.APIDefinition.Name)
+	if *dashboard != "" {
+		con := tykClient(dashboard, secret)
+		results, err := con.fetchDashboardAPIs()
+		if err != nil {
+			log.Fatal("Cannot unmarshal dashboard APIs: ", err)
+		}
+		for _, api := range results.Apis {
+			fmt.Printf("%s; %s; %s; %s; %s\n", api.APIDefinition.Name, api.APIDefinition.APIID, api.APIDefinition.Proxy.ListenPath, api.APIDefinition.Proxy.TargetURL, strings.Join(api.APIDefinition.Tags, ", "))
+		}
+	} else {
+		con := tykClient(gateway, secret)
+		results, err := con.fetchGatewayAPIs()
+		if err != nil {
+			log.Fatal("Cannot unmarshal gateway APIs: ", err)
+		}
+		for _, api := range results {
+			fmt.Printf("%s; %s; %s; %s; %s\n", api.Name, api.APIID, api.Proxy.ListenPath, api.Proxy.TargetURL, strings.Join(api.Tags, ", "))
+		}
+		// fmt.Println(results)
 	}
 }
