@@ -1,4 +1,4 @@
-package models
+package main
 
 import "time"
 
@@ -23,12 +23,6 @@ import "time"
 // 	Description string `json:"description"`
 // 	Image       string `json:"image"`
 // }
-
-// Me a struct of my data
-type Me struct {
-	me   string
-	time time.Time
-}
 
 // OrgAPIs contains the APIs for the while organisation
 type OrgAPIs struct {

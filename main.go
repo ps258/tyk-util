@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -27,9 +28,8 @@ func tykClient(u *string, s *string) *tykConnection {
 	}
 }
 
-func (tc *tykConnection) fetchAPIs() string {
+func (tc *tykConnection) fetchAPIs() (*OrgAPIs, error) {
 	var apis OrgAPIs
-	var me Me
 	req, err := http.NewRequest("GET", *tc.baseURL+"/api/apis", nil)
 	if err != nil {
 		log.Fatal("Error reading request: ", err)
@@ -44,8 +44,9 @@ func (tc *tykConnection) fetchAPIs() string {
 	if err != nil {
 		log.Fatal("Error reading body: ", err)
 	}
-	fmt.Printf("%s\n", body)
-	return string(body)
+	// fmt.Printf("%s\n", body)
+	err = json.Unmarshal(body, &apis)
+	return &apis, err
 }
 
 func main() {
@@ -70,8 +71,13 @@ func main() {
 		log.Fatal("Specify exactly one of apis(-a) or users(-u)")
 	}
 	con := tykClient(dashboard, secret)
-	results := con.fetchAPIs()
-	if results == "" {
-		log.Fatal("nil")
+	results, err := con.fetchAPIs()
+	if err != nil {
+		log.Fatal("Cannot unmarshal: ", err)
+	}
+	// fmt.Println(results.Apis[0].CreatedAt)
+	for _, api := range results.Apis {
+		fmt.Println(api.CreatedAt)
+		fmt.Println(api.APIDefinition.Name)
 	}
 }
