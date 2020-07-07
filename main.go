@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -92,6 +93,8 @@ func (tc *tykConnection) fetchDashboardAPI(api_path string) (*OrgAPIs, []byte, e
 }
 
 func main() {
+	// accept self signed certificates
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	dashboard := flag.String("dashboard", "", "Dashboard host URL")
 	gateway := flag.String("gateway", "", "Gateway URL")
 	secret := flag.String("secret", "", "Either dashboard credentials or the gateway secret")
